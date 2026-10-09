@@ -179,7 +179,12 @@ class EditMediaViewModel(
     }
 
     override fun onChangeIsRepeating(value: Boolean) {
-        mutableUiState.update { it.copy(isRepeating = value) }
+        mutableUiState.update {
+            it.copy(
+                progress = if (value) 1 else it.mediaInfo?.totalDuration(),
+                isRepeating = value,
+            )
+        }
     }
 
     override fun onChangeRepeatCount(value: Int?) {

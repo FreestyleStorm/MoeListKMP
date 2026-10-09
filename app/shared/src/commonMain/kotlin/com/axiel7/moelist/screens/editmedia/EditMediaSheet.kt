@@ -65,6 +65,7 @@ import com.axiel7.moelist.screens.editmedia.composables.EditMediaDateField
 import com.axiel7.moelist.screens.editmedia.composables.EditMediaDatePicker
 import com.axiel7.moelist.screens.editmedia.composables.EditMediaProgressRow
 import com.axiel7.moelist.screens.editmedia.composables.EditMediaValueRow
+import com.axiel7.moelist.ui.base.model.ListStatus
 import com.axiel7.moelist.ui.base.model.ListStatus.Companion.listStatusValues
 import com.axiel7.moelist.ui.composables.button.SelectableIconToggleButton
 import com.axiel7.moelist.ui.composables.preferences.PlainPreferenceView
@@ -386,21 +387,23 @@ private fun EditMediaSheetContent(
                 }
             )
 
-            SwitchPreferenceView(
-                title = stringResource(
-                    if (uiState.mediaType == MediaType.ANIME) UiRes.string.rewatching
-                    else UiRes.string.rereading
-                ),
-                value = uiState.isRepeating,
-                icon = UiRes.drawable.round_repeat_24,
-                iconTint = LocalContentColor.current,
-                iconPadding = PaddingValues(
-                    start = 16.dp,
-                    top = 16.dp,
-                    bottom = 16.dp
-                ),
-                onValueChange = { event?.onChangeIsRepeating(it) },
-            )
+            if (uiState.status == ListStatus.COMPLETED) {
+                SwitchPreferenceView(
+                    title = stringResource(
+                        if (uiState.mediaType == MediaType.ANIME) UiRes.string.rewatching
+                        else UiRes.string.rereading
+                    ),
+                    value = uiState.isRepeating,
+                    icon = UiRes.drawable.round_repeat_24,
+                    iconTint = LocalContentColor.current,
+                    iconPadding = PaddingValues(
+                        start = 16.dp,
+                        top = 16.dp,
+                        bottom = 16.dp
+                    ),
+                    onValueChange = { event?.onChangeIsRepeating(it) },
+                )
+            }
 
             EditMediaProgressRow(
                 label = stringResource(
