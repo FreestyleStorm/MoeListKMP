@@ -1,4 +1,4 @@
-name: Personal Android debug APK
+name: Personal Android APK
 
 on:
   workflow_dispatch:
@@ -25,14 +25,14 @@ jobs:
           chmod +x gradlew
           printf 'sdk.dir=%s\n' "$ANDROID_HOME" > local.properties
 
-      - name: Build debug APK
+      - name: Build unsigned personal APK
         run: >-
-          ./gradlew :app:androidApp:assembleDebug
+          ./gradlew :app:androidApp:assemblePersonal
           --no-daemon --max-workers=2
           '-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8'
           '-Pkotlin.daemon.jvmargs=-Xmx2g'
 
-      - name: Check profile refresh interaction
+      - name: Check profile interactions and update validation
         run: >-
           xvfb-run -a ./gradlew :app:shared:jvmTest
           --no-daemon --max-workers=2
@@ -51,7 +51,7 @@ jobs:
       - name: Upload Android APKs
         uses: actions/upload-artifact@v6
         with:
-          name: moelist-personal-debug
-          path: app/androidApp/build/outputs/apk/debug/*.apk
+          name: moelist-personal-unsigned
+          path: app/androidApp/build/outputs/apk/personal/*.apk
           if-no-files-found: error
           retention-days: 14
