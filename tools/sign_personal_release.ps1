@@ -8,6 +8,7 @@ $privatePath = [IO.Path]::GetFullPath($PrivateDirectory)
 $encryptedKeyPath = Join-Path $privatePath 'release-key.dpapi'
 $passwordPath = Join-Path $privatePath 'release-password.dpapi'
 $certificatePath = Join-Path $privatePath 'release-certificate.pem'
+$pinnedCertificatePath = Join-Path (Split-Path $PSScriptRoot -Parent) 'personal-signing-certificate.sha256'
 Add-Type -AssemblyName System.Security
 $temporaryPath = Join-Path $privatePath ([Guid]::NewGuid().ToString())
 New-Item -ItemType Directory -Path $temporaryPath -Force | Out-Null
@@ -17,7 +18,7 @@ try {
     $hasKey = Test-Path -LiteralPath $encryptedKeyPath
     $hasPassword = Test-Path -LiteralPath $passwordPath
     if (!$hasKey -or !$hasPassword) {
-        if (!$Initialize -or $hasKey -or $hasPassword -or (Test-Path -LiteralPath $certificatePath)) {
+        if (!$Initialize -or $hasKey -or $hasPassword -or (Test-Path -LiteralPath $certificatePath) -or (Test-Path -LiteralPath $pinnedCertificatePath)) {
             throw 'Permanent signing files are missing or incomplete. Restore the original key; never replace it for an existing app.'
         }
         $random = New-Object byte[] 48
@@ -40,11 +41,14 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'APK signing failed.' }
     $verification = & $toolPaths.java -jar $toolPaths.apksigner verify --verbose --print-certs $OutputApk
     if ($LASTEXITCODE -ne 0) { throw 'APK signature verification failed.' }
-    $signer = (($verification | Select-String 'Signer #1 certificate SHA-256 digest:').Line -split ': ', 2)[1]
+    $certificateMatches = [regex]::Matches(($verification -join "`n"), 'certificate SHA-256 digest: ([a-f0-9]{64})')
+    if ($certificateMatches.Count -ne 1) { throw 'Expected exactly one verified signing certificate.' }
+    $signer = $certificateMatches[0].Groups[1].Value
     $publicText = Get-Content -LiteralPath $certificatePath -Raw
     $der = [Convert]::FromBase64String(($publicText -replace '-----BEGIN CERTIFICATE-----|-----END CERTIFICATE-----|\s', ''))
     $expected = ([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($der))).Replace('-', '').ToLowerInvariant()
     if ($signer -ne $expected) { throw 'Unexpected signing certificate.' }
+    if ((Test-Path -LiteralPath $pinnedCertificatePath) -and (Get-Content -LiteralPath $pinnedCertificatePath -Raw).Trim() -ne $expected) { throw 'The signing key does not match the original personal release certificate.' }
     $badging = & $toolPaths.aapt2 dump badging $OutputApk
     if ($LASTEXITCODE -ne 0 -or $badging[0] -notmatch "name='com.axiel7.moelist.debug' versionCode='$VersionCode' versionName='$VersionName-PERSONAL'") { throw 'APK identity/version did not match the requested release.' }
     if (($badging -join "`n") -match 'application-debuggable') { throw 'Personal release must not be debuggable.' }
