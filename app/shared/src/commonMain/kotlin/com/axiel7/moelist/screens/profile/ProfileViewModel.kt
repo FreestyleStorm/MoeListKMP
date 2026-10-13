@@ -18,12 +18,13 @@ class ProfileViewModel(
 
     override val mutableUiState = MutableStateFlow(ProfileUiState())
 
-    init {
+    override fun refreshProfile() {
         viewModelScope.launch {
             setLoading(true)
             val user = userRepository.getMyUser()
 
             if (user == null || user.message != null) {
+                setLoading(false)
                 showMessage(user?.message)
             } else {
                 val tempAnimeStatList = mutableListOf<Stat<ListStatus>>()
