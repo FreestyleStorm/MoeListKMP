@@ -1,0 +1,12 @@
+<resources>
+    <string name="profile_watch_time">Your watch time</string>
+    <string name="profile_days_watched">Days watched</string>
+    <string name="profile_collection">Your collection</string>
+    <string name="profile_retry">Try again</string>
+    <string name="profile_joined">Joined %1$s</string>
+    <string name="profile_watch_time_info">Watch time reported by MyAnimeList, in days. This uses time already watched, rather than the full duration of everything on your list.</string>
+    <string name="profile_episodes_info">Episodes watched, as reported by MyAnimeList. Update your progress in your watching list to keep this current.</string>
+    <string name="profile_mean_info">The mean of your anime scores, as reported by MyAnimeList.</string>
+    <string name="profile_rewatch_info">The number of rewatches reported by MyAnimeList.</string>
+    <string name="profile_stats_unavailable">Your anime statistics could not be loaded. Open your MAL profile or return to this page to try again.</string>
+</resources>
