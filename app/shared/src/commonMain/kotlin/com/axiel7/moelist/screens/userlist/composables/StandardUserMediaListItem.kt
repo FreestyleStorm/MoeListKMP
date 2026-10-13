@@ -1,5 +1,8 @@
 package com.axiel7.moelist.screens.userlist.composables
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -76,6 +79,11 @@ fun StandardUserMediaListItem(
 ) {
     val totalProgress = remember { item.totalProgress() }
     val userProgress = item.userProgress()
+    val animatedProgress by animateFloatAsState(
+        targetValue = item.calculateProgressBarValue().coerceIn(0f, 1f),
+        animationSpec = tween(260),
+        label = "confirmed progress bar",
+    )
     val broadcast = remember { (item.node as? AnimeNode)?.broadcast }
     val isAiring = remember { item.isAiring }
     Card(
@@ -165,8 +173,9 @@ fun StandardUserMediaListItem(
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "${userProgress ?: 0}/${totalProgress.toStringPositiveValueOrUnknown()}",
+                            AnimatedProgressText(
+                                progress = userProgress ?: 0,
+                                total = totalProgress,
                                 style = MaterialTheme.typography.bodyLarge
                             )
                             if ((item as? UserMangaList)?.listStatus?.isUsingVolumeProgress() == true) {
@@ -212,7 +221,7 @@ fun StandardUserMediaListItem(
                     }//:Row
 
                     LinearProgressIndicator(
-                        progress = { item.calculateProgressBarValue() },
+                        progress = { animatedProgress },
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = MaterialTheme.colorScheme.surfaceColorAtElevation(94.dp),
