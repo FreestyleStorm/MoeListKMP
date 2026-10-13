@@ -155,12 +155,10 @@ fun GridUserMediaListItem(
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "${item.userProgress() ?: 0}/${
-                        item.totalProgress().toStringPositiveValueOrUnknown()
-                    }",
-                    style = MaterialTheme.typography.bodyMedium,
-                    lineHeight = 12.sp
+                AnimatedProgressText(
+                    progress = item.userProgress() ?: 0,
+                    total = item.totalProgress(),
+                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 12.sp),
                 )
                 if ((item as? UserMangaList)?.listStatus?.isUsingVolumeProgress() == true) {
                     Icon(
