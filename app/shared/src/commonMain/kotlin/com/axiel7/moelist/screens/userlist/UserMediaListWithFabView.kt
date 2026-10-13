@@ -54,8 +54,12 @@ fun UserMediaListWithFabView(
     topBarAnimateTo: suspend (Float) -> Unit,
     topBarSnapTo: suspend (Float) -> Unit,
     padding: PaddingValues,
+    initialListStatus: ListStatus? = null,
 ) {
-    val viewModel: UserMediaListViewModel = koinViewModel { parametersOf(mediaType) }
+    val viewModel: UserMediaListViewModel = koinViewModel(
+        key = initialListStatus?.let { "profile-${mediaType.name}-${it.name}" },
+        parameters = { parametersOf(mediaType, initialListStatus) },
+    )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     UserMediaListWithFabViewContent(
@@ -68,6 +72,7 @@ fun UserMediaListWithFabView(
         topBarAnimateTo = topBarAnimateTo,
         topBarSnapTo = topBarSnapTo,
         padding = padding,
+        showStatusFab = initialListStatus == null,
     )
 }
 
@@ -83,6 +88,7 @@ private fun UserMediaListWithFabViewContent(
     topBarAnimateTo: suspend (Float) -> Unit= {},
     topBarSnapTo: suspend (Float) -> Unit = {},
     padding: PaddingValues = PaddingValues(),
+    showStatusFab: Boolean = true,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -151,7 +157,7 @@ private fun UserMediaListWithFabViewContent(
         modifier = Modifier
             .padding(bottom = padding.calculateBottomPadding()),
         floatingActionButton = {
-            if (uiState.listStatus != null) {
+            if (showStatusFab && uiState.listStatus != null) {
                 ListStatusFab(
                     mediaType = uiState.mediaType,
                     status = uiState.listStatus,
