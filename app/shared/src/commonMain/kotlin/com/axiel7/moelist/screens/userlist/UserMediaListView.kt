@@ -210,6 +210,7 @@ fun UserMediaListView(
                 }
                 items(
                     items = uiState.mediaList,
+                    key = { it.node.id },
                     contentType = { it.node }
                 ) { item ->
                     GridItemView(item = item)
@@ -275,6 +276,7 @@ fun UserMediaListView(
                     ListStyle.STANDARD -> {
                         items(
                             items = uiState.mediaList,
+                            key = { it.node.id },
                             contentType = { it.node }
                         ) { item ->
                             StandardItemView(item = item)
@@ -289,6 +291,7 @@ fun UserMediaListView(
                     ListStyle.COMPACT -> {
                         items(
                             items = uiState.mediaList,
+                            key = { it.node.id },
                             contentType = { it.node }
                         ) { item ->
                             CompactItemView(item = item)
@@ -303,6 +306,7 @@ fun UserMediaListView(
                     ListStyle.MINIMAL -> {
                         items(
                             items = uiState.mediaList,
+                            key = { it.node.id },
                             contentType = { it.node }
                         ) { item ->
                             MinimalItemView(item = item)
@@ -351,6 +355,7 @@ fun UserMediaListView(
                     ListStyle.STANDARD -> {
                         items(
                             items = uiState.mediaList,
+                            key = { it.node.id },
                             contentType = { it.node }
                         ) { item ->
                             StandardItemView(item = item)
@@ -365,6 +370,7 @@ fun UserMediaListView(
                     ListStyle.COMPACT -> {
                         items(
                             items = uiState.mediaList,
+                            key = { it.node.id },
                             contentType = { it.node }
                         ) { item ->
                             CompactItemView(item = item)
@@ -379,6 +385,7 @@ fun UserMediaListView(
                     ListStyle.MINIMAL -> {
                         items(
                             items = uiState.mediaList,
+                            key = { it.node.id },
                             contentType = { it.node }
                         ) { item ->
                             MinimalItemView(item = item)
