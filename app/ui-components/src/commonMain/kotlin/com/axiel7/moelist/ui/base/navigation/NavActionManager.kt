@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import com.axiel7.moelist.data.model.media.MediaType
+import com.axiel7.moelist.ui.base.model.ListStatus
 import kotlinx.collections.immutable.ImmutableList
 
 @Immutable
@@ -69,6 +70,10 @@ class NavActionManager(
 
     fun toProfile() {
         navigator.navigate(Route.Profile)
+    }
+
+    fun toAnimeCategory(status: ListStatus) {
+        navigator.navigate(Route.AnimeCategory(status))
     }
 
     companion object {
