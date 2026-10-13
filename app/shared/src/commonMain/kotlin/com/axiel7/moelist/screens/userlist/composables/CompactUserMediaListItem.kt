@@ -154,10 +154,9 @@ fun CompactUserMediaListItem(
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "${item.userProgress() ?: 0}/${
-                                item.totalProgress().toStringPositiveValueOrUnknown()
-                            }",
+                        AnimatedProgressText(
+                            progress = item.userProgress() ?: 0,
+                            total = item.totalProgress(),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                         if ((item as? UserMangaList)?.listStatus?.isUsingVolumeProgress() == true) {
