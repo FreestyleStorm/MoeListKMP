@@ -3,6 +3,7 @@ package com.axiel7.moelist.main
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -260,6 +261,38 @@ fun MainNavigation(
                     isCompactScreen = isCompactScreen,
                     navActionManager = navActionManager
                 )
+            }
+        }
+
+        entry<Route.AnimeCategory>(
+            metadata = NavDisplay.transitionSpec {
+                (slideInHorizontally(tween(320, easing = FastOutSlowInEasing)) { it / 4 }
+                        + fadeIn(tween(220))) togetherWith fadeOut(tween(160))
+            } + NavDisplay.popTransitionSpec {
+                fadeIn(tween(220)) togetherWith
+                        (slideOutHorizontally(tween(280, easing = FastOutSlowInEasing)) { it / 4 }
+                                + fadeOut(tween(180)))
+            },
+        ) { category ->
+            DefaultScaffoldWithTopAppBar(
+                title = category.status.localized(),
+                navigateBack = navActionManager::goBack,
+            ) { categoryPadding ->
+                if (!isLoggedIn) {
+                    LoginView(modifier = Modifier.padding(categoryPadding))
+                } else {
+                    UserMediaListWithFabView(
+                        mediaType = MediaType.ANIME,
+                        isCompactScreen = isCompactScreen,
+                        navActionManager = navActionManager,
+                        topBarHeightPx = 0f,
+                        topBarOffsetY = 0f,
+                        topBarAnimateTo = {},
+                        topBarSnapTo = {},
+                        padding = categoryPadding,
+                        initialListStatus = category.status,
+                    )
+                }
             }
         }
 
