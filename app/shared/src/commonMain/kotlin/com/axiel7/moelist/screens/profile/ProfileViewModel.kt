@@ -10,6 +10,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 class ProfileViewModel(
     private val userRepository: UserRepository,
@@ -17,10 +18,12 @@ class ProfileViewModel(
 ) : BaseViewModel<ProfileUiState>(), ProfileEvent {
 
     override val mutableUiState = MutableStateFlow(ProfileUiState())
+    private var refreshJob: Job? = null
 
     override fun refreshProfile() {
-        viewModelScope.launch {
-            setLoading(true)
+        if (refreshJob?.isActive == true) return
+        refreshJob = viewModelScope.launch {
+            setLoading(mutableUiState.value.user == null)
             val user = userRepository.getMyUser()
 
             if (user == null || user.message != null) {
