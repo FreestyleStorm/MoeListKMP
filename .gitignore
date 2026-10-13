@@ -1,4 +1,9 @@
 *.iml
+*.p12
+*.keystore
+*.jks
+signing.properties
+.private/
 .kotlin
 .gradle
 **/build/
