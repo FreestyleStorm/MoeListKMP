@@ -57,7 +57,7 @@ private data class StatDetails(val title: String, val value: String, val descrip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProfileViewContent(
+internal fun ProfileViewContent(
     uiState: ProfileUiState,
     event: ProfileEvent?,
     isCompactScreen: Boolean,
@@ -69,7 +69,8 @@ private fun ProfileViewContent(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var details by remember { mutableStateOf<StatDetails?>(null) }
     val stats = uiState.user?.animeStatistics
-    val available = !uiState.isLoading && stats != null
+    val initialLoading = uiState.isLoading && uiState.user == null
+    val available = stats != null
     val days = stats?.numDaysWatched?.format() ?: "—"
     val episodes = stats?.numEpisodes?.format() ?: "—"
     val mean = stats?.meanScore?.format() ?: "—"
@@ -150,7 +151,7 @@ private fun ProfileViewContent(
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(uiState.user?.name ?: if (uiState.isLoading) "…" else "—",
                                     style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.defaultPlaceholder(uiState.isLoading))
+                                    modifier = Modifier.profilePlaceholder(initialLoading))
                                 uiState.user?.location?.takeIf { it.isNotBlank() }?.let {
                                     Text(it, style = MaterialTheme.typography.bodyMedium)
                                 }
@@ -177,7 +178,7 @@ private fun ProfileViewContent(
                     Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(watchTimeTitle, style = MaterialTheme.typography.titleMedium)
                         Text(days, style = MaterialTheme.typography.displayLarge, fontWeight = FontWeight.Bold,
-                            modifier = Modifier.defaultPlaceholder(uiState.isLoading))
+                            modifier = Modifier.profilePlaceholder(initialLoading))
                         Text(stringResource(UiRes.string.profile_days_watched), style = MaterialTheme.typography.bodyLarge)
                         HorizontalDivider(Modifier.padding(vertical = 8.dp), color = LocalContentColor.current.copy(alpha = .15f))
                         TextButton(enabled = available,
@@ -219,17 +220,17 @@ private fun ProfileViewContent(
                 categories.chunked(2).forEach { row ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         row.forEach { (status, count) ->
-                            CategoryCard(status, count, uiState.isLoading, available,
+                            CategoryCard(status, count, initialLoading, available,
                                 Modifier.weight(1f), onClick = { navActionManager.toAnimeCategory(status) })
                         }
                     }
                 }
 
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ProfileMetric(meanTitle, mean, available, uiState.isLoading, Modifier.weight(1f)) {
+                    ProfileMetric(meanTitle, mean, available, initialLoading, Modifier.weight(1f)) {
                         details = StatDetails(meanTitle, mean, meanDescription)
                     }
-                    ProfileMetric(repeatTitle, rewatched, available, uiState.isLoading, Modifier.weight(1f)) {
+                    ProfileMetric(repeatTitle, rewatched, available, initialLoading, Modifier.weight(1f)) {
                         details = StatDetails(repeatTitle, rewatched, repeatDescription)
                     }
                 }
@@ -245,7 +246,7 @@ private fun CategoryCard(status: ListStatus, count: Int?, loading: Boolean, enab
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(painterResource(status.icon), contentDescription = null, modifier = Modifier.size(24.dp))
             Text(count?.format() ?: "—", style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold, modifier = Modifier.defaultPlaceholder(loading))
+                fontWeight = FontWeight.Bold, modifier = Modifier.profilePlaceholder(loading))
             Text(status.localized(), style = MaterialTheme.typography.titleSmall)
         }
     }
@@ -257,7 +258,7 @@ private fun ProfileMetric(title: String, value: String, enabled: Boolean, loadin
     PressSurface(onClick, enabled, MaterialTheme.colorScheme.surfaceContainer, modifier = modifier) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold,
-                modifier = Modifier.defaultPlaceholder(loading))
+                modifier = Modifier.profilePlaceholder(loading))
             Text(title, style = MaterialTheme.typography.labelLarge)
         }
     }
@@ -280,6 +281,10 @@ private fun PressSurface(
         shape = shape, color = color, contentColor = contentColor,
         modifier = modifier.graphicsLayer { scaleX = scale; scaleY = scale }, content = content)
 }
+
+// Loaded text has no placeholder drawing layer, including while MAL refreshes.
+private fun Modifier.profilePlaceholder(initialLoading: Boolean): Modifier =
+    if (initialLoading) defaultPlaceholder(true) else this
 
 @Composable
 private fun ProfileLandscape(modifier: Modifier) {
