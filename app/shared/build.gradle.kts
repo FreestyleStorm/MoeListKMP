@@ -95,6 +95,7 @@ kotlin {
             get().dependsOn(mobileMain)
         }
         androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
             implementation(libs.androidx.preference)
             implementation(libs.accompanist.permissions)
