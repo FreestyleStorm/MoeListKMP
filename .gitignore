@@ -5,6 +5,9 @@
 signing.properties
 .private/
 tools/signing-tools/
+__pycache__/
+*.pyc
+update-proof/
 .kotlin
 .gradle
 **/build/
