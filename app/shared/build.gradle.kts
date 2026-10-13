@@ -80,6 +80,11 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
+        jvmTest.dependencies {
+            implementation(compose.desktop.uiTestJUnit4)
+            implementation(compose.desktop.currentOs)
+            implementation(libs.junit)
+        }
         val mobileMain = create("mobileMain") {
             dependsOn(commonMain.get())
         }
