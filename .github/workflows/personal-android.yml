@@ -32,6 +32,22 @@ jobs:
           '-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8'
           '-Pkotlin.daemon.jvmargs=-Xmx2g'
 
+      - name: Check profile refresh interaction
+        run: >-
+          xvfb-run -a ./gradlew :app:shared:jvmTest
+          --no-daemon --max-workers=2
+          '-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8'
+          '-Pkotlin.daemon.jvmargs=-Xmx2g'
+
+      - name: Upload profile test results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: profile-refresh-test-results
+          path: app/shared/build/test-results/jvmTest/*.xml
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Upload Android APKs
         uses: actions/upload-artifact@v6
         with:
