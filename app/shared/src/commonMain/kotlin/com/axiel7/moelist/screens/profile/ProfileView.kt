@@ -171,7 +171,8 @@ private fun ProfileViewContent(
                     }
                 }
 
-                PressSurface(enabled = available, color = MaterialTheme.colorScheme.primaryContainer,
+                PressSurface(enabled = available, color = Color(0xFFB9EBD1),
+                    contentColor = Color(0xFF113C30),
                     onClick = { details = StatDetails(watchTimeTitle, days, watchTimeDescription) }) {
                     Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(watchTimeTitle, style = MaterialTheme.typography.titleMedium)
@@ -182,7 +183,7 @@ private fun ProfileViewContent(
                         TextButton(enabled = available,
                             onClick = { details = StatDetails(episodesTitle, episodes, episodesDescription) },
                             contentPadding = PaddingValues(0.dp)) {
-                            Text("$episodes ${stringResource(UiRes.string.episodes)}")
+                            Text("$episodes ${stringResource(UiRes.string.episodes)}", color = Color(0xFF113C30))
                         }
                     }
                 }
