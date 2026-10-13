@@ -40,7 +40,8 @@ android {
         applicationId = "com.axiel7.moelist"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = versionProps.getProperty("code").toInt()
+        versionCode = providers.gradleProperty("moelistTestVersionCode").orNull?.toInt()
+            ?: versionProps.getProperty("code").toInt()
         versionName = versionProps.getProperty("name")
         addManifestPlaceholders(
             mapOf("oidcRedirectScheme" to "moelist")
@@ -55,6 +56,14 @@ android {
     }
 
     buildTypes {
+        create("personal") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-PERSONAL"
+            isDebuggable = false
+            signingConfig = null
+            matchingFallbacks += "debug"
+        }
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-DEBUG"
