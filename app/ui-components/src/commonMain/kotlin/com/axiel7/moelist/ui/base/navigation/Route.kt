@@ -3,6 +3,7 @@ package com.axiel7.moelist.ui.base.navigation
 import androidx.compose.runtime.Stable
 import androidx.navigation3.runtime.NavKey
 import com.axiel7.moelist.data.model.media.MediaType
+import com.axiel7.moelist.ui.base.model.ListStatus
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.serialization.Serializable
 
@@ -45,6 +46,10 @@ sealed interface Route : NavKey {
 
     @Serializable
     data object Profile : Route
+
+    @Serializable
+    @Stable
+    data class AnimeCategory(val status: ListStatus) : Route
 
     @Serializable
     @Stable
