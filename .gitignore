@@ -4,6 +4,7 @@
 *.jks
 signing.properties
 .private/
+tools/signing-tools/
 .kotlin
 .gradle
 **/build/
