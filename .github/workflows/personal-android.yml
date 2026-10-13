@@ -9,7 +9,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v6
 
@@ -54,4 +54,44 @@ jobs:
           name: moelist-personal-unsigned
           path: app/androidApp/build/outputs/apk/personal/*.apk
           if-no-files-found: error
+          retention-days: 14
+
+      - name: Prepare update test APKs
+        run: |
+          mkdir -p update-proof
+          cp app/androidApp/build/outputs/apk/personal/*x86_64*.apk update-proof/before-unsigned.apk
+          original_code=$(awk -F= '/^code/ {gsub(/ /,"",$2); print $2}' version.properties)
+          ./gradlew :app:androidApp:assemblePersonal -PmoelistTestVersionCode=$((original_code + 1)) --no-daemon --max-workers=2 '-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8' '-Pkotlin.daemon.jvmargs=-Xmx2g'
+          cp app/androidApp/build/outputs/apk/personal/*x86_64*.apk update-proof/after-unsigned.apk
+          # Disposable emulator fixture key only. Production signing remains local.
+          keytool -genkeypair -keystore update-proof/test.p12 -storetype PKCS12 -alias test -keyalg RSA -validity 30 -dname 'CN=Disposable Update Test' -storepass test-password -keypass test-password
+          tools="$ANDROID_HOME/build-tools/37.0.0"
+          for version in before after; do
+            "$tools/zipalign" -P 16 -f 4 "update-proof/$version-unsigned.apk" "update-proof/$version-aligned.apk"
+            "$tools/apksigner" sign --ks update-proof/test.p12 --ks-key-alias test --ks-pass pass:test-password --out "update-proof/$version.apk" "update-proof/$version-aligned.apk"
+            "$tools/apksigner" verify --verbose "update-proof/$version.apk"
+          done
+
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Verify Android data survives an update
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: default
+          arch: x86_64
+          disable-animations: true
+          script: python3 tools/check_android_update.py
+
+      - name: Upload Android update test evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: android-update-test-evidence
+          path: update-proof/evidence/
+          if-no-files-found: ignore
           retention-days: 14
