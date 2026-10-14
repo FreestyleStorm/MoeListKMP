@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.dropUnlessResumed
 import com.axiel7.moelist.data.model.media.MediaType
 import com.axiel7.moelist.ui.base.navigation.NavActionManager
+import com.axiel7.moelist.ui.base.navigation.Route
 import com.axiel7.moelist.ui.composables.PlatformImage
 import com.axiel7.moelist.ui.generated.resources.UiRes
 import com.axiel7.moelist.ui.generated.resources.ic_round_account_circle_24
@@ -41,6 +42,7 @@ fun MainTopAppBar(
     profilePicture: String?,
     isVisible: Boolean,
     navActionManager: NavActionManager,
+    searchMediaType: MediaType,
     modifier: Modifier = Modifier,
 ) {
     AnimatedContent(
@@ -52,7 +54,7 @@ fun MainTopAppBar(
     ) { isVisible ->
         if (isVisible) {
             Card(
-                onClick = dropUnlessResumed { navActionManager.toSearch(MediaType.ANIME) },
+                onClick = dropUnlessResumed { navActionManager.toSearch(searchMediaType) },
                 modifier = modifier
                     .statusBarsPadding()
                     .fillMaxWidth()
@@ -97,3 +99,6 @@ fun MainTopAppBar(
         }
     }
 }
+
+internal fun Route.searchMediaType(): MediaType =
+    if (this is Route.Tab.Manga) MediaType.MANGA else MediaType.ANIME
