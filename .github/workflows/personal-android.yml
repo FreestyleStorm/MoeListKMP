@@ -56,6 +56,15 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Upload illustrated profile previews
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: illustrated-profile-previews
+          path: app/shared/build/profile-preview/*.png
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Prepare update test APKs
         run: |
           mkdir -p update-proof
