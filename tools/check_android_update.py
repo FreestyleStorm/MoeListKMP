@@ -23,14 +23,21 @@ def tree():
     text = adb('shell', 'cat', '/sdcard/update-ui.xml')
     (evidence / 'settings-ui.xml').write_text(text)
     return ET.fromstring(text)
-def click(text):
+def click(text, scroll=False):
     for attempt in range(8):
-        for node in tree().iter('node'):
+        ui = tree()
+        for node in ui.iter('node'):
             if node.get('text') == text or node.get('content-desc') == text:
                 x1, y1, x2, y2 = map(int, re.findall(r'\d+', node.attrib['bounds']))
                 adb('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
                 time.sleep(2)
                 return
+        if scroll:
+            container = next((node for node in ui.iter('node') if node.get('scrollable') == 'true'), None)
+            if container is not None:
+                x1, y1, x2, y2 = map(int, re.findall(r'\d+', container.attrib['bounds']))
+                x = (x1 + x2) // 2
+                adb('shell', 'input', 'swipe', str(x), str(y2 - 16), str(x), str(y1 + (y2-y1)//3), '300')
         time.sleep(1)
     screenshot('failure.png')
     raise AssertionError(f'Could not find {text!r}')
@@ -91,7 +98,7 @@ assert any(node.get('enabled') == 'false' and any(child.get('text') == 'Send' fo
 screenshot('assistant-nano-unavailable.png')
 (evidence / 'assistant-ui.xml').write_text(ET.tostring(ui, encoding='unicode'))
 click('arrow_back')
-click('Settings')
+click('Settings', scroll=True)
 assert any(node.get('text') == 'App updates' for node in tree().iter('node'))
 screenshot('app-updates-settings.png')
 click('Check for updates')
