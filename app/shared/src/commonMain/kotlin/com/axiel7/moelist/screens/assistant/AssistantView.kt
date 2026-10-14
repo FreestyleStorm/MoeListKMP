@@ -49,6 +49,7 @@ internal fun AssistantViewContent(
         if (listState.layoutInfo.totalItemsCount > 0) listState.animateScrollToItem(listState.layoutInfo.totalItemsCount - 1)
     }
     DefaultScaffoldWithTopAppBar(title = "Anime companion", navigateBack = navActionManager::goBack,
+        canCollapseTopBar = false,
         actions = { TextButton(enabled = !state.busy, onClick = { onClear(); draft = "" }) { Text("New chat") } }) { padding ->
         Box(Modifier.padding(padding).fillMaxSize().imePadding(), contentAlignment = Alignment.TopCenter) {
             Column(Modifier.widthIn(max = 720.dp).fillMaxSize()) {
