@@ -17,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
@@ -88,6 +90,7 @@ internal fun ProfileViewContent(
     val meanDescription = stringResource(UiRes.string.profile_mean_info)
     val repeatTitle = stringResource(UiRes.string.rewatched)
     val repeatDescription = stringResource(UiRes.string.profile_rewatch_info)
+    val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
 
     LaunchedEffect(uiState.message) {
         uiState.message?.let {
@@ -122,7 +125,8 @@ internal fun ProfileViewContent(
         isTopBarVisible = isCompactScreen,
     ) { padding ->
         Column(
-            Modifier.padding(padding).fillMaxWidth().verticalScroll(rememberScrollState()),
+            Modifier.padding(padding).fillMaxSize().profileAurora(dark)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(
@@ -256,6 +260,28 @@ internal fun ProfileViewContent(
                 }
             }
         }
+    }
+}
+
+// Keep the glow fixed behind the scrolling cards. Brushes are cached until the size or theme changes.
+private fun Modifier.profileAurora(dark: Boolean): Modifier = drawWithCache {
+    val base = if (dark) Color(0xFF0B1221) else Color(0xFFF4F7FC)
+    val teal = if (dark) Color(0xFF219C91).copy(alpha = .42f) else Color(0xFF9DE6D9).copy(alpha = .55f)
+    val violet = if (dark) Color(0xFF8053CF).copy(alpha = .38f) else Color(0xFFCAB7EE).copy(alpha = .48f)
+    val tealGlow = Brush.radialGradient(
+        colors = listOf(teal, teal.copy(alpha = 0f)),
+        center = Offset(size.width * -.1f, size.height * .32f),
+        radius = size.maxDimension * .8f,
+    )
+    val violetGlow = Brush.radialGradient(
+        colors = listOf(violet, violet.copy(alpha = 0f)),
+        center = Offset(size.width * 1.05f, size.height * .88f),
+        radius = size.maxDimension * .75f,
+    )
+    onDrawBehind {
+        drawRect(base)
+        drawRect(tealGlow)
+        drawRect(violetGlow)
     }
 }
 
