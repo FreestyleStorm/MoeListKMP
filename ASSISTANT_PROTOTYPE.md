@@ -19,13 +19,13 @@ This prototype uses Gemini Nano through ML Kit's Prompt API (1.0.0-beta4). There
 
 The importer follows all pages for completed, watching, plan-to-watch, on-hold, and dropped entries and deduplicates by MAL ID. A failed/inconsistent page aborts import instead of presenting a partial profile as complete. Current content visibility applies, so the displayed count means visible imported titles.
 
-Ratings above the user's own average influence genre preferences; unrated entries stay neutral. Rewatch count slightly reinforces scored favorites. Watched/currently active/on-hold/dropped titles are excluded from discovery. Plan-to-watch entries may appear. The selected seed and its known related titles are excluded to keep comparisons distinct from franchise continuation.
+Ratings at or above the user's own average influence genre preferences; unrated entries stay neutral. Rewatch count slightly reinforces scored favorites. Watched/currently active/on-hold/dropped titles are excluded from discovery. Plan-to-watch entries may appear. The selected seed and its known related titles are excluded to keep comparisons distinct from franchise continuation.
 
 The candidate pool is deliberately bounded: seed-title recommendation links, MAL suggestions, and links from higher-rated titles. Up to six favorites and thirty candidate details are enriched, with three concurrent detail requests and an in-memory cache. This is not an exhaustive search of MAL. The prototype currently supports anime; manga is later work.
 
 Nano interprets a request into validated constraints and orders up to five already-filtered, real catalog IDs. Episode/format/excluded-genre constraints are enforced by app code. Unknown lengths cannot pass a strict length limit. Unknown or duplicate model IDs, malformed JSON, and invalid constraints fail the request without replacing the last accepted results. Explanations on cards are generated from actual genre overlap and recommendation-link evidence, avoiding unsupported model-written facts.
 
-The model receives a compact current request/previous constraints and up to ten candidate descriptions. It does not receive MAL credentials, account email, birthday, private comments, or the entire history. Personalization is computed locally from imported ratings and statuses. Only existing MAL requests leave the device; model inference uses AICore locally. Prompts remain short and are checked against Nano's actual token limit before generation.
+The model receives a compact current request/previous constraints and up to ten candidate descriptions. It does not receive MAL credentials, account email, birthday, private comments, or the entire history. Personalization is computed locally from imported ratings and statuses. Catalog and account requests go to MAL; Android/AICore manages Google's model downloads and setup, while model inference runs locally. Prompts remain short and are checked against Nano's actual token limit before generation.
 
 ## Validation boundaries
 
