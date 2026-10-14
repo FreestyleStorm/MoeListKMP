@@ -24,11 +24,12 @@ fun DefaultScaffoldWithTopAppBar(
     snackbarHostState: SnackbarHostState? = null,
     contentWindowInsets: WindowInsets = WindowInsets.systemBars,
     isTopBarVisible: Boolean = true,
+    canCollapseTopBar: Boolean = true,
     content: @Composable (PaddingValues) -> Unit
 ) {
     val topAppBarScrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
         state = rememberTopAppBarState(),
-        canScroll = { isTopBarVisible }
+        canScroll = { isTopBarVisible && canCollapseTopBar }
     )
     Scaffold(
         modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
