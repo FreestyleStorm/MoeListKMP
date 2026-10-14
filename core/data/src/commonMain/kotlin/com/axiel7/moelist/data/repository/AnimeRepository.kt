@@ -49,7 +49,7 @@ class AnimeRepository(
                     "related_manga{media_type,alternative_titles{en,ja}}," +
                     "recommendations{alternative_titles{en,ja}},background,statistics"
         private const val USER_ANIME_LIST_FIELDS =
-            "alternative_titles{en,ja},list_status{$LIST_STATUS_FIELDS},num_episodes,media_type,status,broadcast"
+            "alternative_titles{en,ja},list_status{status,score,num_episodes_watched,$LIST_STATUS_FIELDS},num_episodes,media_type,status,broadcast"
         private const val SEARCH_FIELDS =
             "id,title,alternative_titles{en,ja},main_picture,mean,media_type,num_episodes,start_season," +
                     "my_list_status{status}"
