@@ -187,6 +187,10 @@ private fun HomeViewContent(
             .padding(padding)
     ) {
         // Chips
+        OutlinedButton(onClick = dropUnlessResumed { navActionManager.toAssistant() },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
+            Text("Ask for recommendations · On-device AI")
+        }
         if (isCompactScreen) {
             Row(
                 modifier = Modifier.padding(top = 10.dp, start = 8.dp, end = 16.dp)
