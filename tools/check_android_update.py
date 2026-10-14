@@ -76,6 +76,21 @@ def check_search_default(media):
 check_search_default('Manga')
 check_search_default('Anime')
 click('More')
+click('Anime companion')
+for attempt in range(25):
+    ui = tree()
+    texts = [node.get('text', '') for node in ui.iter('node')]
+    if any('Gemini Nano is unavailable' in text or 'check timed out' in text for text in texts):
+        break
+    time.sleep(1)
+else:
+    raise AssertionError('Unsupported emulator did not show Nano availability result')
+assert any(node.get('text') == 'Sign in to MAL to use your ratings and watch history.' for node in ui.iter('node'))
+assert any(node.get('enabled') == 'false' and any(child.get('text') == 'Send' for child in node.iter('node'))
+           for node in ui.iter('node')), 'Unsupported device must not submit AI requests'
+screenshot('assistant-nano-unavailable.png')
+(evidence / 'assistant-ui.xml').write_text(ET.tostring(ui, encoding='unicode'))
+click('arrow_back')
 click('Settings')
 assert any(node.get('text') == 'App updates' for node in tree().iter('node'))
 screenshot('app-updates-settings.png')
@@ -95,6 +110,8 @@ screenshot('app-updates-checked.png')
     'updated_app_launch': True, 'settings_updater_visible': True,
     'github_update_check': True, 'uses_real_mal_credentials': False,
     'manga_search_default': True, 'anime_search_default': True,
+    'assistant_screen_opens': True, 'unsupported_nano_handled': True,
+    'real_nano_inference_tested': False,
     'signing': 'Disposable emulator fixture certificate; production APK signing is verified separately.'
 }, indent=2))
 print('Android update retained private data; Settings updater and GitHub check passed.')
