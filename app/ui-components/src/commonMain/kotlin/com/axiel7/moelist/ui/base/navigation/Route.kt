@@ -45,6 +45,9 @@ sealed interface Route : NavKey {
     data object Recommendations : Route
 
     @Serializable
+    data object Assistant : Route
+
+    @Serializable
     data object Profile : Route
 
     @Serializable
