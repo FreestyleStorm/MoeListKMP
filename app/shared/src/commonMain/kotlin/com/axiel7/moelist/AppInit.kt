@@ -32,6 +32,7 @@ import com.axiel7.moelist.screens.more.settings.list.ListStyleSettingsViewModel
 import com.axiel7.moelist.screens.profile.ProfileViewModel
 import com.axiel7.moelist.screens.ranking.MediaRankingViewModel
 import com.axiel7.moelist.screens.recommendations.RecommendationsViewModel
+import com.axiel7.moelist.screens.assistant.AssistantViewModel
 import com.axiel7.moelist.screens.search.SearchViewModel
 import com.axiel7.moelist.screens.season.SeasonChartViewModel
 import com.axiel7.moelist.screens.userlist.UserMediaListViewModel
@@ -94,6 +95,7 @@ fun initApp(
         viewModelOf(::ProfileViewModel)
         viewModelOf(::MediaRankingViewModel)
         viewModelOf(::RecommendationsViewModel)
+        viewModelOf(::AssistantViewModel)
         viewModelOf(::SearchViewModel)
         viewModelOf(::SeasonChartViewModel)
         viewModel { params ->
