@@ -38,6 +38,7 @@ import com.axiel7.moelist.screens.more.settings.list.ListStyleSettingsView
 import com.axiel7.moelist.screens.profile.ProfileView
 import com.axiel7.moelist.screens.ranking.MediaRankingView
 import com.axiel7.moelist.screens.recommendations.RecommendationsView
+import com.axiel7.moelist.screens.assistant.AssistantView
 import com.axiel7.moelist.screens.search.SearchHostView
 import com.axiel7.moelist.screens.season.SeasonChartView
 import com.axiel7.moelist.screens.userlist.UserMediaListWithFabView
@@ -194,6 +195,8 @@ fun MainNavigation(
                 navActionManager = navActionManager
             )
         }
+
+        entry<Route.Assistant> { AssistantView(isLoggedIn, navActionManager) }
 
         entry<Route.Settings> {
             SettingsView(
