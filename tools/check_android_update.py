@@ -56,6 +56,25 @@ adb('logcat', '-c')
 adb('shell', 'am', 'start', '-W', '-n', f'{package}/com.axiel7.moelist.MainActivity')
 time.sleep(8)
 assert adb('shell', 'pidof', package), 'Updated app failed to launch'
+
+def check_search_default(media):
+    click(media)
+    click('Search')
+    ui = tree()
+    (evidence / f'{media.lower()}-search-ui.xml').write_text(ET.tostring(ui, encoding='unicode'))
+    # Search chips expose selected semantics. The bottom navigation is hidden on this screen.
+    selected = [node for node in ui.iter('node') if node.get('text') == media
+                and (node.get('selected') == 'true' or node.get('checked') == 'true')]
+    # Compose can place selected semantics on the chip's parent rather than its text node.
+    selected += [node for node in ui.iter('node')
+                 if (node.get('selected') == 'true' or node.get('checked') == 'true')
+                 and any(child.get('text') == media for child in node.iter('node'))]
+    assert selected, f'{media} was not the selected search category'
+    screenshot(f'{media.lower()}-search-default.png')
+    click('arrow_back')
+
+check_search_default('Manga')
+check_search_default('Anime')
 click('More')
 click('Settings')
 assert any(node.get('text') == 'App updates' for node in tree().iter('node'))
@@ -75,6 +94,7 @@ screenshot('app-updates-checked.png')
     'private_data_sha256': expected, 'private_data_preserved': True,
     'updated_app_launch': True, 'settings_updater_visible': True,
     'github_update_check': True, 'uses_real_mal_credentials': False,
+    'manga_search_default': True, 'anime_search_default': True,
     'signing': 'Disposable emulator fixture certificate; production APK signing is verified separately.'
 }, indent=2))
 print('Android update retained private data; Settings updater and GitHub check passed.')
