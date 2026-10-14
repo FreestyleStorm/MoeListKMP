@@ -135,6 +135,10 @@ private fun MoreViewContent(
 
         HorizontalDivider()
 
+        MoreItem(title = "Anime companion", subtitle = "Conversational recommendations on this phone",
+            icon = UiRes.drawable.ic_info,
+            onClick = dropUnlessResumed { navActionManager.toAssistant() })
+
         MoreItem(
             title = stringResource(UiRes.string.anime_manga_news),
             subtitle = stringResource(UiRes.string.news_summary),
