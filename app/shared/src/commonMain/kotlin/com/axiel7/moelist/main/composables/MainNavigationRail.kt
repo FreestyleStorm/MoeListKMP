@@ -33,8 +33,9 @@ fun MainNavigationRail(
         header = {
             FloatingActionButton(
                 onClick = {
+                    val mediaType = navigator.state.topLevelRoute.searchMediaType()
                     onItemSelected(-1)
-                    navigator.navigate(Route.Search())
+                    navigator.navigate(Route.Search(mediaType))
                 }
             ) {
                 Icon(
