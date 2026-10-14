@@ -18,6 +18,9 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.semantics.SemanticsActions
 import com.axiel7.moelist.data.model.User
 import com.axiel7.moelist.data.model.anime.UserAnimeStatistics
 import com.axiel7.moelist.ui.base.model.ListStatus
@@ -111,7 +114,10 @@ class ProfileRefreshTest {
         }
         for (theme in listOf("dark", "light")) {
             compose.runOnIdle { dark.value = theme == "dark" }
-            compose.onNodeWithText("Anime fan").performScrollTo()
+            compose.onNode(hasScrollAction()).performSemanticsAction(SemanticsActions.ScrollBy) {
+                it(0f, -10000f)
+            }
+            compose.waitForIdle()
             capture("profile-$theme-top")
             compose.onNodeWithText("Plan to Watch").performScrollTo().assertIsEnabled()
             capture("profile-$theme-collection")
