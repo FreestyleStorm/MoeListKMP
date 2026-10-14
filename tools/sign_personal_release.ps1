@@ -52,7 +52,9 @@ try {
     $badging = & $toolPaths.aapt2 dump badging $OutputApk
     if ($LASTEXITCODE -ne 0 -or $badging[0] -notmatch "name='com.axiel7.moelist.debug' versionCode='$VersionCode' versionName='$VersionName-PERSONAL'") { throw 'APK identity/version did not match the requested release.' }
     if (($badging -join "`n") -match 'application-debuggable') { throw 'Personal release must not be debuggable.' }
-    $metadata = [ordered]@{schemaVersion=1;packageName='com.axiel7.moelist.debug';versionCode=$VersionCode;versionName=$VersionName;minSdk=24;signingCertificateSha256=$expected;apks=@(@{abi=$Abi;fileName=(Split-Path $OutputApk -Leaf);sha256=(Get-FileHash -LiteralPath $OutputApk -Algorithm SHA256).Hash.ToLowerInvariant();sizeBytes=(Get-Item -LiteralPath $OutputApk).Length})}
+    $minimumSdkMatch = [regex]::Match(($badging -join "`n"), "(?m)^sdkVersion:'([0-9]+)'")
+    if (!$minimumSdkMatch.Success) { throw 'Could not verify APK minimum Android version.' }
+    $metadata = [ordered]@{schemaVersion=1;packageName='com.axiel7.moelist.debug';versionCode=$VersionCode;versionName=$VersionName;minSdk=[int]$minimumSdkMatch.Groups[1].Value;signingCertificateSha256=$expected;apks=@(@{abi=$Abi;fileName=(Split-Path $OutputApk -Leaf);sha256=(Get-FileHash -LiteralPath $OutputApk -Algorithm SHA256).Hash.ToLowerInvariant();sizeBytes=(Get-Item -LiteralPath $OutputApk).Length})}
     [IO.File]::WriteAllText((Join-Path (Split-Path $OutputApk -Parent) 'moelist-update.json'), ($metadata | ConvertTo-Json -Depth 6), (New-Object Text.UTF8Encoding($false)))
     Write-Output "Signed and verified $OutputApk with permanent certificate $expected"
 } finally {
