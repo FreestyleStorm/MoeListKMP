@@ -2,7 +2,8 @@ package com.axiel7.moelist.screens.profile
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -18,10 +19,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,6 +43,7 @@ import com.axiel7.moelist.ui.theme.MoeListTheme
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -124,16 +129,18 @@ internal fun ProfileViewContent(
                 Modifier.widthIn(max = 720.dp).fillMaxWidth().padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
-                    Box {
-                        ProfileLandscape(Modifier.matchParentSize())
-                        Row(Modifier.fillMaxWidth().padding(24.dp),
+                Surface(shape = RoundedCornerShape(28.dp), color = ProfileNight,
+                    contentColor = Color.White, border = BorderStroke(1.dp, Color.White.copy(alpha = .08f))) {
+                    Box(Modifier.fillMaxWidth().heightIn(min = 228.dp)) {
+                        ProfileArtwork(UiRes.drawable.profile_night_lake, ProfileNight,
+                            Modifier.matchParentSize(), imageAlpha = 1f)
+                        Row(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(24.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             PressSurface(
                                 enabled = !uiState.profilePictureUrl.isNullOrBlank(),
                                 color = MaterialTheme.colorScheme.surface,
-                                modifier = Modifier.size(80.dp),
+                                modifier = Modifier.size(88.dp),
                                 shape = CircleShape,
                                 onClick = {
                                     uiState.profilePictureUrl?.let {
@@ -151,9 +158,11 @@ internal fun ProfileViewContent(
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(uiState.user?.name ?: if (uiState.isLoading) "…" else "—",
                                     style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold,
+                                    maxLines = 2, overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.profilePlaceholder(initialLoading))
                                 uiState.user?.location?.takeIf { it.isNotBlank() }?.let {
-                                    Text(it, style = MaterialTheme.typography.bodyMedium)
+                                    Text(it, style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 2, overflow = TextOverflow.Ellipsis)
                                 }
                                 uiState.user?.birthday?.parseDateAndLocalize()?.let {
                                     Text(it, style = MaterialTheme.typography.labelMedium)
@@ -166,25 +175,36 @@ internal fun ProfileViewContent(
                                     enabled = !uiState.user?.name.isNullOrBlank(),
                                     onClick = { uriHandler.openUri(MAL_PROFILE_URL + uiState.user?.name) },
                                     contentPadding = PaddingValues(0.dp),
-                                ) { Text(stringResource(UiRes.string.view_profile_mal)) }
+                                ) { Text(stringResource(UiRes.string.view_profile_mal), color = ProfileMint) }
                             }
                         }
                     }
                 }
 
-                PressSurface(enabled = available, color = Color(0xFFB9EBD1),
-                    contentColor = Color(0xFF113C30),
+                PressSurface(enabled = available, color = ProfileNight,
+                    contentColor = Color.White,
+                    border = BorderStroke(1.dp, ProfileMint.copy(alpha = .18f)),
                     onClick = { details = StatDetails(watchTimeTitle, days, watchTimeDescription) }) {
-                    Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(watchTimeTitle, style = MaterialTheme.typography.titleMedium)
-                        Text(days, style = MaterialTheme.typography.displayLarge, fontWeight = FontWeight.Bold,
-                            modifier = Modifier.profilePlaceholder(initialLoading))
-                        Text(stringResource(UiRes.string.profile_days_watched), style = MaterialTheme.typography.bodyLarge)
-                        HorizontalDivider(Modifier.padding(vertical = 8.dp), color = LocalContentColor.current.copy(alpha = .15f))
-                        TextButton(enabled = available,
-                            onClick = { details = StatDetails(episodesTitle, episodes, episodesDescription) },
-                            contentPadding = PaddingValues(0.dp)) {
-                            Text("$episodes ${stringResource(UiRes.string.episodes)}", color = Color(0xFF113C30))
+                    Box {
+                        ProfileArtwork(UiRes.drawable.profile_night_lake, ProfileNight,
+                            Modifier.matchParentSize(), imageAlpha = .85f)
+                        Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(painterResource(UiRes.drawable.ic_round_access_time_24),
+                                    contentDescription = null, tint = ProfileMint, modifier = Modifier.size(20.dp))
+                                Text(watchTimeTitle, style = MaterialTheme.typography.titleMedium)
+                            }
+                            Text(days, style = MaterialTheme.typography.displayLarge, fontWeight = FontWeight.Bold,
+                                color = ProfileMint,
+                                modifier = Modifier.profilePlaceholder(initialLoading))
+                            Text(stringResource(UiRes.string.profile_days_watched), style = MaterialTheme.typography.bodyLarge)
+                            HorizontalDivider(Modifier.padding(vertical = 8.dp), color = LocalContentColor.current.copy(alpha = .15f))
+                            TextButton(enabled = available,
+                                onClick = { details = StatDetails(episodesTitle, episodes, episodesDescription) },
+                                contentPadding = PaddingValues(0.dp)) {
+                                Text("$episodes ${stringResource(UiRes.string.episodes)}", color = ProfileMint)
+                            }
                         }
                     }
                 }
@@ -213,7 +233,7 @@ internal fun ProfileViewContent(
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
                     categories.forEach { (status, count) ->
                         if (total > 0 && count != null && count > 0) {
-                            Box(Modifier.weight(count.toFloat()).fillMaxHeight().background(status.primaryColor()))
+                            Box(Modifier.weight(count.toFloat()).fillMaxHeight().background(categoryAccent(status)))
                         }
                     }
                 }
@@ -242,12 +262,27 @@ internal fun ProfileViewContent(
 @Composable
 private fun CategoryCard(status: ListStatus, count: Int?, loading: Boolean, enabled: Boolean,
     modifier: Modifier, onClick: () -> Unit) {
-    PressSurface(onClick, enabled, status.primaryColor(), status.onPrimaryColor(), modifier) {
-        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(painterResource(status.icon), contentDescription = null, modifier = Modifier.size(24.dp))
-            Text(count?.format() ?: "—", style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold, modifier = Modifier.profilePlaceholder(loading))
-            Text(status.localized(), style = MaterialTheme.typography.titleSmall)
+    val accent = categoryAccent(status)
+    val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
+    val base = lerp(MaterialTheme.colorScheme.surfaceContainer, accent, if (dark) .09f else .06f)
+    val art = when (status) {
+        ListStatus.COMPLETED, ListStatus.PLAN_TO_WATCH -> UiRes.drawable.profile_night_lake
+        ListStatus.WATCHING -> UiRes.drawable.profile_evening_city
+        else -> null
+    }
+    PressSurface(onClick, enabled, base, MaterialTheme.colorScheme.onSurface, modifier,
+        border = BorderStroke(1.dp, accent.copy(alpha = if (dark) .2f else .16f))) {
+        Box {
+            if (art != null) ProfileArtwork(art, base, Modifier.matchParentSize(),
+                imageAlpha = if (dark) .7f else .3f, wash = if (dark) .25f else .65f)
+            Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(painterResource(status.icon), contentDescription = null, tint = accent,
+                    modifier = Modifier.size(24.dp))
+                Text(count?.format() ?: "—", style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold, color = if (dark) accent else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.profilePlaceholder(loading))
+                Text(status.localized(), style = MaterialTheme.typography.titleSmall)
+            }
         }
     }
 }
@@ -272,13 +307,14 @@ private fun PressSurface(
     contentColor: Color = contentColorFor(color),
     modifier: Modifier = Modifier.fillMaxWidth(),
     shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(24.dp),
+    border: BorderStroke? = null,
     content: @Composable () -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) .975f else 1f, tween(180), label = "profile press")
     Surface(onClick = onClick, enabled = enabled, interactionSource = interaction,
-        shape = shape, color = color, contentColor = contentColor,
+        shape = shape, color = color, contentColor = contentColor, border = border,
         modifier = modifier.graphicsLayer { scaleX = scale; scaleY = scale }, content = content)
 }
 
@@ -286,22 +322,33 @@ private fun PressSurface(
 private fun Modifier.profilePlaceholder(initialLoading: Boolean): Modifier =
     if (initialLoading) defaultPlaceholder(true) else this
 
+private val ProfileNight = Color(0xFF101C23)
+private val ProfileMint = Color(0xFF9BE8C5)
+
 @Composable
-private fun ProfileLandscape(modifier: Modifier) {
-    val tint = MaterialTheme.colorScheme.primary
-    Canvas(modifier) {
-        drawRect(Brush.verticalGradient(listOf(tint.copy(alpha = .12f), Color.Transparent)))
-        val mountains = Path().apply {
-            moveTo(0f, size.height * .8f)
-            lineTo(size.width * .25f, size.height * .3f)
-            lineTo(size.width * .48f, size.height * .85f)
-            lineTo(size.width * .78f, size.height * .25f)
-            lineTo(size.width, size.height * .7f)
-            lineTo(size.width, size.height)
-            lineTo(0f, size.height)
-            close()
-        }
-        drawPath(mountains, tint.copy(alpha = .07f))
+private fun categoryAccent(status: ListStatus): Color {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
+    return when (status) {
+        ListStatus.COMPLETED -> if (dark) Color(0xFF75DBAC) else Color(0xFF246849)
+        ListStatus.WATCHING, ListStatus.READING -> if (dark) Color(0xFF8FB7FF) else Color(0xFF24497E)
+        ListStatus.PLAN_TO_WATCH, ListStatus.PLAN_TO_READ -> if (dark) Color(0xFFC8B0FF) else Color(0xFF604484)
+        ListStatus.ON_HOLD -> if (dark) Color(0xFFF5D077) else Color(0xFF705A26)
+        ListStatus.DROPPED -> if (dark) Color(0xFFFF9AA6) else Color(0xFF943948)
+    }
+}
+
+// Decorative offline artwork; the entire card stays a single animated tap target.
+@Composable
+private fun ProfileArtwork(art: DrawableResource, base: Color, modifier: Modifier,
+    imageAlpha: Float, wash: Float = .15f) {
+    Box(modifier) {
+        Image(painterResource(art), contentDescription = null,
+            contentScale = ContentScale.Crop, alignment = Alignment.CenterEnd,
+            alpha = imageAlpha, modifier = Modifier.matchParentSize())
+        Box(Modifier.matchParentSize().background(Brush.horizontalGradient(
+            listOf(base.copy(alpha = .78f), base.copy(alpha = wash)))))
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(
+            listOf(Color.Transparent, base.copy(alpha = .42f)))))
     }
 }
 
