@@ -29,6 +29,7 @@ import com.axiel7.moelist.ui.base.navigation.Navigator
 import com.axiel7.moelist.main.composables.MainBottomNavBar
 import com.axiel7.moelist.main.composables.MainNavigationRail
 import com.axiel7.moelist.main.composables.MainTopAppBar
+import com.axiel7.moelist.main.composables.searchMediaType
 import com.axiel7.moelist.ui.base.navigation.NavActionManager
 import kotlinx.coroutines.launch
 
@@ -57,6 +58,7 @@ fun MainView(
                     profilePicture = profilePicture,
                     isVisible = isBottomDestination,
                     navActionManager = navActionManager,
+                    searchMediaType = navigator.state.topLevelRoute.searchMediaType(),
                     modifier = Modifier
                         .graphicsLayer {
                             translationY = topBarOffsetY.value
