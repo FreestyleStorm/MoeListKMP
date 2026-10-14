@@ -46,7 +46,11 @@ internal fun AssistantViewContent(
         if (canSend && draft.isNotBlank()) { onSend(draft); draft = "" }
     }
     LaunchedEffect(state.messages.size, state.matches, state.choices) {
-        if (listState.layoutInfo.totalItemsCount > 0) listState.animateScrollToItem(listState.layoutInfo.totalItemsCount - 1)
+        if (state.messages.isEmpty() && state.matches.isEmpty() && state.choices.isEmpty()) {
+            listState.scrollToItem(0)
+        } else if (listState.layoutInfo.totalItemsCount > 0) {
+            listState.animateScrollToItem(listState.layoutInfo.totalItemsCount - 1)
+        }
     }
     DefaultScaffoldWithTopAppBar(title = "Anime companion", navigateBack = navActionManager::goBack,
         canCollapseTopBar = false,
