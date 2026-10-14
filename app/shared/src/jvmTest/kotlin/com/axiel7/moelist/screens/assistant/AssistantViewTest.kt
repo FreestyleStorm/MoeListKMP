@@ -35,6 +35,7 @@ class AssistantViewTest {
                 status = "Gemini Nano is unavailable on this device right now."), true,
                 NavActionManager.rememberNavActionManager(), { error("Should not submit") }, { checked++ }, {}, {}, {}, {})
         } }
+        compose.onNodeWithText("Gemini Nano is unavailable on this device right now.").assertIsDisplayed()
         compose.onNodeWithText("Ask for recommendations").performTextInput("like Made in Abyss")
         compose.onNodeWithText("Send").assertIsNotEnabled()
         compose.onNodeWithText("Check Nano").performScrollTo().performClick()
@@ -70,7 +71,8 @@ class AssistantViewTest {
             compose.runOnIdle { assertEquals(Route.MediaDetails(MediaType.ANIME, 100), opened) }
             compose.onNodeWithText("New chat").performClick()
             compose.onNodeWithText("Sample anime").assertDoesNotExist()
-            compose.onNodeWithText("Find your next favorite").performScrollTo()
+            compose.waitForIdle()
+            compose.onNodeWithText("Find your next favorite").assertIsDisplayed()
             capture("assistant-$theme-start")
         }
     }
