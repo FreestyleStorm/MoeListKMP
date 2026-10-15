@@ -72,22 +72,27 @@ data class ConversationResult(
     val request: AnimeRequest, val matches: List<AnimeMatch> = emptyList(),
     val choices: List<AnimeNode> = emptyList(), val imported: Int = 0, val rated: Int = 0,
     val response: String,
+    val clarifications: List<String> = emptyList(),
 )
 
 class AssistantConversation(private val nano: NanoClient, private val catalog: AssistantCatalog) {
     suspend fun respond(text: String, previous: AnimeRequest, shown: List<AnimeMatch>,
         onProgress: (String) -> Unit): ConversationResult {
         onProgress("Understanding your request on this phone…")
+        if (ambiguousChildren(text)) return ConversationResult(previous,
+            response = "By ‘less kids’, do you mean fewer child main characters, or a less childish tone? I'll keep the comparison and your other limits.",
+            clarifications = listOf("Prefer fewer child protagonists. Keep the other preferences.", "Less childish tone. Keep the other preferences."))
+        val length = episodeEdit(text)
         val request = diagnosticOperation(DiagnosticEvent.ASSISTANT_INTERPRET) {
-            parseAnimeRequest(nano.generate(interpretationPrompt(text, previous, shown)),
-                previous.excludedIds.toSet() + shown.map { it.anime.id })
+            val edit = if (localRefinement(text, length)) "{}" else nano.generate(interpretationPrompt(text, previous, shown))
+            refineRequest(text, previous, shown, edit)
         }
         AppDiagnostics.record(DiagnosticEvent.ASSISTANT_INTERPRET, metrics = mapOf(
             DiagnosticMetric.HAS_SEED to if (request.seedTitle != null) 1L else 0L,
             DiagnosticMetric.MAX_EPISODES to (request.maxEpisodes?.toLong() ?: -1L),
             DiagnosticMetric.GENRE_COUNT to request.genres.size.toLong(),
             DiagnosticMetric.AVOID_GENRE_COUNT to request.avoidGenres.size.toLong(),
-            DiagnosticMetric.QUALITY_COUNT to request.qualities.size.toLong()))
+            DiagnosticMetric.QUALITY_COUNT to request.userPreferences.size.toLong()))
         return recommend(request, onProgress = onProgress)
     }
 
@@ -99,8 +104,9 @@ class AssistantConversation(private val nano: NanoClient, private val catalog: A
         AppDiagnostics.record(DiagnosticEvent.ASSISTANT_HISTORY, metrics = mapOf(
             DiagnosticMetric.IMPORTED_COUNT to history.size.toLong(), DiagnosticMetric.RATED_COUNT to rated.toLong()))
         var seed: AnimeDetails? = null
-        if (selectedSeedId != null) {
-            seed = catalog.details(selectedSeedId) ?: error("Could not load that anime's details. Please retry.")
+        val trustedSeedId = selectedSeedId ?: request.seedId
+        if (trustedSeedId != null) {
+            seed = catalog.details(trustedSeedId) ?: error("Could not load that anime's details. Please retry.")
         } else request.seedTitle?.let { title ->
             val nodes = catalog.search(title)
             val exact = nodes.filter { node ->
@@ -117,32 +123,34 @@ class AssistantConversation(private val nano: NanoClient, private val catalog: A
         val favorites = history.filter { (it.listStatus?.score ?: 0) > 0 }
             .sortedByDescending { (it.listStatus?.score ?: 0) * 10 + (it.listStatus?.repeatCount ?: 0).coerceIn(0, 3) }
             .take(6).mapNotNull { catalog.details(it.node.id) }
-        val ids = (seed?.recommendations.orEmpty().map { it.node.id } +
-            catalog.suggestions().map { it.id } + favorites.flatMap { it.recommendations.orEmpty().map { r -> r.node.id } })
-            .distinct().filter { id -> id != seed?.id && history.none { it.node.id == id && it.listStatus?.status != ListStatusDto.PLAN_TO_WATCH } }
-            .take(30)
+        val blocked = history.filter { it.listStatus?.status != ListStatusDto.PLAN_TO_WATCH }.map { it.node.id }.toSet() +
+            listOfNotNull(seed?.id) + seed?.relatedAnime.orEmpty().map { it.node.id } + request.excludedIds
+        val ids = balancedCandidateIds(listOf(seed?.recommendations.orEmpty().map { it.node.id },
+            catalog.suggestions().map { it.id }, favorites.flatMap { it.recommendations.orEmpty().map { r -> r.node.id } }), blocked)
         val candidates = coroutineScope {
             val semaphore = Semaphore(3)
             ids.map { id -> async { semaphore.withPermit { catalog.details(id) } } }.awaitAll().filterNotNull()
         }
-        val committed = request.copy(seedTitle = seed?.title ?: request.seedTitle)
-        val ranked = rankAnime(candidates, history, favorites, seed, committed).take(10)
+        val committed = request.copy(seedTitle = seed?.title ?: request.seedTitle, seedId = seed?.id)
+        val ranked = rankAnime(candidates, history, favorites, seed, committed).take(8)
         AppDiagnostics.record(DiagnosticEvent.ASSISTANT_RANK, metrics = mapOf(
             DiagnosticMetric.CANDIDATE_COUNT to candidates.size.toLong(), DiagnosticMetric.MATCH_COUNT to ranked.size.toLong()))
         if (ranked.isEmpty()) return ConversationResult(committed, imported = history.size, rated = rated,
-            response = "No matches in the current suggestion pool fit those limits. Try a different title or relax a limit.")
+            response = "None of the ${candidates.size} titles checked fit ${requestSummary(committed).joinToString(" · ").ifBlank { "your current limits" }}. I haven't searched the whole MAL catalog. Try another comparison or change a limit.")
         onProgress("Comparing the matches with Gemini Nano…")
         val selection = diagnosticOperation(DiagnosticEvent.ASSISTANT_SELECTION) {
             validateSelection(nano.generate(comparisonPrompt(ranked, seed, committed)), ranked)
         }
+        if (selection.isEmpty()) return ConversationResult(committed, imported = history.size, rated = rated,
+            response = "The available descriptions didn't support a confident match for your preferences. I kept your comparison and limits; try another title or adjust a preference.")
         AppDiagnostics.record(DiagnosticEvent.ASSISTANT_SELECTION, metrics = mapOf(
             DiagnosticMetric.MATCH_COUNT to selection.size.toLong(),
             DiagnosticMetric.SHORTEST_MATCH to (selection.mapNotNull { it.anime.numEpisodes }.minOrNull()?.toLong() ?: -1L),
             DiagnosticMetric.LONGEST_MATCH to (selection.mapNotNull { it.anime.numEpisodes }.maxOrNull()?.toLong() ?: -1L)))
         val intro = if (seed == null) "Here are ${selection.size} suggestions using your MAL ratings and watch history."
             else "Here are ${selection.size} comparisons for ${seed?.title}, adjusted to your MAL history."
-        val caveat = if (committed.qualities.isEmpty()) "" else
-            " Mood preferences (${committed.qualities.joinToString()}) are tentative comparisons from descriptions, not verified content ratings."
+        val caveat = if (committed.userPreferences.isEmpty()) "" else
+            " Tone and cast comparisons use descriptions and may be uncertain; cast ages and content ratings aren't verified."
         return ConversationResult(committed, matches = selection, imported = history.size, rated = rated, response = intro + caveat)
     }
 }
