@@ -5,6 +5,7 @@ import pathlib
 import re
 import subprocess
 import time
+import sys
 import xml.etree.ElementTree as ET
 
 root = pathlib.Path('update-proof')
@@ -111,6 +112,68 @@ for attempt in range(30):
 else:
     raise AssertionError('Update check did not complete')
 screenshot('app-updates-checked.png')
+
+# Exercise the real Android storage, FileProvider and Keystore implementation.
+sys.path.insert(0, str(pathlib.Path('tools/diagnostics_receiver').resolve()))
+from receiver import validate_report
+
+click('Diagnostics', scroll=True)
+click('Preview report', scroll=True)
+screenshot('diagnostics-preview.png')
+click('Share report file', scroll=True)
+activities = adb('shell', 'dumpsys', 'activity', 'activities')
+assert any(('ChooserActivity' in line or 'com.android.intentresolver' in line)
+           and ('ResumedActivity' in line or 'topResumedActivity' in line)
+           for line in activities.splitlines()), 'Android did not open the report share sheet'
+report_directory = f'{private}/cache/diagnostic-reports'
+names = adb('shell', 'ls', report_directory).splitlines()
+report_name = next(name for name in names if name.endswith('.json'))
+report_text = adb('shell', 'cat', f'{report_directory}/{report_name}')
+report = validate_report(json.loads(report_text))
+assert report['device']['appCode'] == next_code
+assert any(event['event'] == 'NANO_CHECK' for event in report['records'])
+assert all(secret not in report_text for secret in ('test-only-token', 'fake_login', 'update-sentinel'))
+(evidence / 'diagnostic-report.json').write_text(report_text)
+adb('shell', 'input', 'keyevent', '4')
+time.sleep(2)
+
+def input_field(label, value):
+    ui = tree()
+    field = next(node for node in ui.iter('node') if node.get('class') == 'android.widget.EditText'
+                 and any(child.get('text') == label for child in node.iter('node')))
+    x1, y1, x2, y2 = map(int, re.findall(r'\d+', field.attrib['bounds']))
+    adb('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
+    adb('shell', 'input', 'text', value)
+    adb('shell', 'input', 'keyevent', '4')
+
+click('Server address', scroll=True)
+adb('shell', 'input', 'keyevent', '4')
+input_field('Server address', 'https://logs.example.invalid')
+click('Upload key', scroll=True)
+adb('shell', 'input', 'keyevent', '4')
+input_field('Upload key', 'u' * 64)
+click('Save server', scroll=True)
+destination = subprocess.check_output(['adb', 'exec-out', 'cat', f'{private}/no_backup/diagnostics/destination.bin'])
+assert len(destination) > 28 and b'u' * 64 not in destination
+assert b'logs.example.invalid' not in destination, 'Server credentials were not encrypted'
+click('Remove server', scroll=True)
+assert 'destination.bin' not in adb('shell', 'ls', f'{private}/no_backup/diagnostics').splitlines()
+click('Clear local diagnostics', scroll=True)
+assert json.loads(adb('shell', 'cat', f'{private}/no_backup/diagnostics/events.json'))['records'] == []
+for _ in range(4):
+    outer = next(node for node in tree().iter('node') if node.get('scrollable') == 'true')
+    x1, y1, x2, y2 = map(int, re.findall(r'\d+', outer.attrib['bounds']))
+    adb('shell', 'input', 'swipe', str(x1 + 8), str(y1 + 40), str(x1 + 8), str(y2 - 40), '300')
+click('Keep recent diagnostics', scroll=True)
+state = json.loads(adb('shell', 'cat', f'{private}/no_backup/diagnostics/events.json'))
+assert state == {'enabled': False, 'records': []}
+screenshot('diagnostics-disabled.png')
+adb('shell', 'am', 'force-stop', package)
+adb('shell', 'am', 'start', '-W', '-n', f'{package}/com.axiel7.moelist.MainActivity')
+time.sleep(5)
+state = json.loads(adb('shell', 'cat', f'{private}/no_backup/diagnostics/events.json'))
+assert state == {'enabled': False, 'records': []}, 'Diagnostics opt-out did not survive restart'
+
 (evidence / 'result.json').write_text(json.dumps({
     'installed_before': original_code, 'installed_after': next_code,
     'private_data_sha256': expected, 'private_data_preserved': True,
@@ -119,6 +182,11 @@ screenshot('app-updates-checked.png')
     'manga_search_default': True, 'anime_search_default': True,
     'assistant_screen_opens': True, 'unsupported_nano_handled': True,
     'real_nano_inference_tested': False,
+    'diagnostic_preview': True, 'diagnostic_share_sheet': True,
+    'diagnostic_report_validated': True, 'diagnostic_key_encrypted': True,
+    'diagnostic_server_removal': True, 'diagnostic_clear': True,
+    'diagnostic_opt_out_survives_restart': True,
+    'real_vps_upload_tested': False,
     'signing': 'Disposable emulator fixture certificate; production APK signing is verified separately.'
 }, indent=2))
 print('Android update retained private data; Settings updater and GitHub check passed.')
