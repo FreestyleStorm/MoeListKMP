@@ -26,6 +26,7 @@ data class AssistantUiState(
     val imported: Int? = null,
     val rated: Int = 0,
     val error: String? = null,
+    val clarifications: List<String> = emptyList(),
 )
 
 class AssistantViewModel(repository: AnimeRepository, preferences: DefaultPreferencesRepository) : ViewModel() {
@@ -91,7 +92,13 @@ class AssistantViewModel(repository: AnimeRepository, preferences: DefaultPrefer
     }
 
     private fun accept(result: ConversationResult) {
+        if (result.clarifications.isNotEmpty()) {
+            mutable.update { it.copy(request = result.request, clarifications = result.clarifications, choices = emptyList(),
+                messages = (it.messages + AssistantMessage(false, result.response)).takeLast(20), status = "Choose what you mean, or type a clarification.") }
+            return
+        }
         mutable.update { it.copy(request = result.request, matches = result.matches, choices = result.choices,
+            clarifications = emptyList(),
             imported = result.imported, rated = result.rated,
             messages = (it.messages + AssistantMessage(false, result.response)).takeLast(20), status = "Ready for your next request.") }
     }
@@ -112,6 +119,8 @@ class AssistantViewModel(repository: AnimeRepository, preferences: DefaultPrefer
             catch (e: CancellationException) {
                 if (e !is TimeoutCancellationException) throw e
                 mutable.update { it.copy(error = "That took too long. Please retry; previous results are unchanged.") }
+            } catch (error: AssistantRequestError) {
+                mutable.update { it.copy(error = error.message, status = "Your previous preferences are kept.") }
             } catch (_: Exception) {
                 mutable.update { it.copy(error = "Couldn't complete this request. Check MAL sign-in, your connection, and Nano availability, then retry. Previous results are unchanged.") }
             } finally { mutable.update { it.copy(busy = false) } }
