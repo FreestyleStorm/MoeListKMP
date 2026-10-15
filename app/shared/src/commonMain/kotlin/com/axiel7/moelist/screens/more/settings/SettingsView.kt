@@ -41,6 +41,7 @@ import com.axiel7.moelist.data.model.ui.TabletMode
 import com.axiel7.moelist.data.model.ui.ThemeStyle
 import com.axiel7.moelist.ui.base.navigation.NavActionManager
 import com.axiel7.moelist.screens.more.settings.updates.AppUpdateSetting
+import com.axiel7.moelist.screens.more.settings.diagnostics.DiagnosticsSetting
 import com.axiel7.moelist.ui.composables.DefaultScaffoldWithTopAppBar
 import com.axiel7.moelist.ui.composables.button.OpenByDefaultSettingsButton
 import com.axiel7.moelist.ui.composables.preferences.ListPreferenceView
@@ -136,6 +137,7 @@ private fun SettingsViewContent(
                 .padding(padding)
         ) {
             AppUpdateSetting()
+            DiagnosticsSetting()
             SettingsTitle(text = stringResource(UiRes.string.display))
 
             ListPreferenceView(
