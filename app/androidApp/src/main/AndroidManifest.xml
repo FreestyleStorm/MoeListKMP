@@ -28,6 +28,12 @@
         android:localeConfig="@xml/locales_config"
         android:theme="@style/Theme.MySplash"
         tools:targetApi="33">
+        <provider android:name="com.axiel7.moelist.diagnostics.DiagnosticFileProvider"
+            android:authorities="${applicationId}.diagnostics"
+            android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/diagnostic_file_paths" />
+        </provider>
         <provider android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.updates"
             android:exported="false" android:grantUriPermissions="true">
