@@ -25,6 +25,9 @@ jobs:
           chmod +x gradlew
           printf 'sdk.dir=%s\n' "$ANDROID_HOME" > local.properties
 
+      - name: Test private diagnostics receiver
+        run: python3 -m unittest discover -s tools/diagnostics_receiver -p 'test_*.py' -v
+
       - name: Build unsigned personal APK
         run: >-
           ./gradlew :app:androidApp:assemblePersonal
