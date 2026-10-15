@@ -8,6 +8,7 @@ import com.axiel7.moelist.data.model.media.ListStatusDto
 import com.axiel7.moelist.data.model.media.MediaSort
 import com.axiel7.moelist.data.repository.AnimeRepository
 import com.axiel7.moelist.data.repository.DefaultPreferencesRepository
+import com.axiel7.moelist.diagnostics.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -77,16 +78,26 @@ class AssistantConversation(private val nano: NanoClient, private val catalog: A
     suspend fun respond(text: String, previous: AnimeRequest, shown: List<AnimeMatch>,
         onProgress: (String) -> Unit): ConversationResult {
         onProgress("Understanding your request on this phone…")
-        val request = parseAnimeRequest(nano.generate(interpretationPrompt(text, previous, shown)),
-            previous.excludedIds.toSet() + shown.map { it.anime.id })
+        val request = diagnosticOperation(DiagnosticEvent.ASSISTANT_INTERPRET) {
+            parseAnimeRequest(nano.generate(interpretationPrompt(text, previous, shown)),
+                previous.excludedIds.toSet() + shown.map { it.anime.id })
+        }
+        AppDiagnostics.record(DiagnosticEvent.ASSISTANT_INTERPRET, metrics = mapOf(
+            DiagnosticMetric.HAS_SEED to if (request.seedTitle != null) 1L else 0L,
+            DiagnosticMetric.MAX_EPISODES to (request.maxEpisodes?.toLong() ?: -1L),
+            DiagnosticMetric.GENRE_COUNT to request.genres.size.toLong(),
+            DiagnosticMetric.AVOID_GENRE_COUNT to request.avoidGenres.size.toLong(),
+            DiagnosticMetric.QUALITY_COUNT to request.qualities.size.toLong()))
         return recommend(request, onProgress = onProgress)
     }
 
     suspend fun recommend(request: AnimeRequest, selectedSeedId: Int? = null,
         onProgress: (String) -> Unit): ConversationResult {
         onProgress("Reading your MAL watch history and ratings…")
-        val history = catalog.history()
+        val history = diagnosticOperation(DiagnosticEvent.ASSISTANT_HISTORY) { catalog.history() }
         val rated = history.count { (it.listStatus?.score ?: 0) > 0 }
+        AppDiagnostics.record(DiagnosticEvent.ASSISTANT_HISTORY, metrics = mapOf(
+            DiagnosticMetric.IMPORTED_COUNT to history.size.toLong(), DiagnosticMetric.RATED_COUNT to rated.toLong()))
         var seed: AnimeDetails? = null
         if (selectedSeedId != null) {
             seed = catalog.details(selectedSeedId) ?: error("Could not load that anime's details. Please retry.")
@@ -116,10 +127,18 @@ class AssistantConversation(private val nano: NanoClient, private val catalog: A
         }
         val committed = request.copy(seedTitle = seed?.title ?: request.seedTitle)
         val ranked = rankAnime(candidates, history, favorites, seed, committed).take(10)
+        AppDiagnostics.record(DiagnosticEvent.ASSISTANT_RANK, metrics = mapOf(
+            DiagnosticMetric.CANDIDATE_COUNT to candidates.size.toLong(), DiagnosticMetric.MATCH_COUNT to ranked.size.toLong()))
         if (ranked.isEmpty()) return ConversationResult(committed, imported = history.size, rated = rated,
             response = "No matches in the current suggestion pool fit those limits. Try a different title or relax a limit.")
         onProgress("Comparing the matches with Gemini Nano…")
-        val selection = validateSelection(nano.generate(comparisonPrompt(ranked, seed, committed)), ranked)
+        val selection = diagnosticOperation(DiagnosticEvent.ASSISTANT_SELECTION) {
+            validateSelection(nano.generate(comparisonPrompt(ranked, seed, committed)), ranked)
+        }
+        AppDiagnostics.record(DiagnosticEvent.ASSISTANT_SELECTION, metrics = mapOf(
+            DiagnosticMetric.MATCH_COUNT to selection.size.toLong(),
+            DiagnosticMetric.SHORTEST_MATCH to (selection.mapNotNull { it.anime.numEpisodes }.minOrNull()?.toLong() ?: -1L),
+            DiagnosticMetric.LONGEST_MATCH to (selection.mapNotNull { it.anime.numEpisodes }.maxOrNull()?.toLong() ?: -1L)))
         val intro = if (seed == null) "Here are ${selection.size} suggestions using your MAL ratings and watch history."
             else "Here are ${selection.size} comparisons for ${seed?.title}, adjusted to your MAL history."
         val caveat = if (committed.qualities.isEmpty()) "" else
