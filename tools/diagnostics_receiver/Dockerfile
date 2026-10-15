@@ -1,0 +1,7 @@
+FROM python:3.13-slim
+WORKDIR /app
+COPY receiver.py contract.json /app/
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 LISTEN_HOST=0.0.0.0
+USER 1000:1000
+EXPOSE 8765
+CMD ["python", "receiver.py"]
