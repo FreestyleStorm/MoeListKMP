@@ -1,0 +1,38 @@
+services:
+  inbox:
+    build: .
+    user: "${LOCAL_UID:?Run setup.py first}:${LOCAL_GID:?Run setup.py first}"
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 192m
+    pids_limit: 64
+    cpus: 0.50
+    volumes:
+      - ./data:/data
+    secrets:
+      - upload_key
+      - read_key
+    networks: [diagnostics]
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      LOG_DOMAIN: ${LOG_DOMAIN:?Run setup.py first}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [diagnostics]
+secrets:
+  upload_key:
+    file: ./secrets/upload_key
+  read_key:
+    file: ./secrets/read_key
+networks:
+  diagnostics:
+volumes:
+  caddy_data:
+  caddy_config:
