@@ -45,7 +45,7 @@ internal fun AssistantViewContent(
     fun send() {
         if (canSend && draft.isNotBlank()) { onSend(draft); draft = "" }
     }
-    LaunchedEffect(state.messages.size, state.matches, state.choices) {
+    LaunchedEffect(state.messages.size, state.matches, state.choices, state.clarifications) {
         if (state.messages.isEmpty() && state.matches.isEmpty() && state.choices.isEmpty()) {
             listState.scrollToItem(0)
         } else if (listState.layoutInfo.totalItemsCount > 0) {
@@ -105,8 +105,13 @@ internal fun AssistantViewContent(
                             Text(node.title)
                         }
                     }
-                    if (state.matches.isNotEmpty()) item { Text("Your matches", style = MaterialTheme.typography.titleLarge) }
-                    items(state.matches, key = { "match-${it.anime.id}" }) { match ->
+                    items(state.clarifications) { clarification ->
+                        OutlinedButton(enabled = canSend, onClick = { onSend(clarification) }, modifier = Modifier.fillMaxWidth()) {
+                            Text(if (clarification.startsWith("Prefer fewer")) "Fewer child protagonists" else "Less childish tone")
+                        }
+                    }
+                    if (state.matches.isNotEmpty() && state.clarifications.isEmpty()) item { Text("Your matches", style = MaterialTheme.typography.titleLarge) }
+                    items(if (state.clarifications.isEmpty()) state.matches else emptyList(), key = { "match-${it.anime.id}" }) { match ->
                         Card(onClick = { navActionManager.toMediaDetails(MediaType.ANIME, match.anime.id) },
                             shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -129,13 +134,16 @@ internal fun AssistantViewContent(
                             }
                         }
                     }
-                    if (state.matches.isNotEmpty()) item {
+                    if (state.matches.isNotEmpty() && state.clarifications.isEmpty()) item {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(enabled = canSend, onClick = { onSend("Keep the same preferences, but only series under 24 episodes.") }) { Text("Under 24 episodes") }
                             OutlinedButton(enabled = canSend, onClick = { onSend("Keep the same preferences, but only movies.") }) { Text("Movies") }
                         }
                     }
                 }
+                val summary = requestSummary(state.request)
+                if (summary.isNotEmpty()) Text("Current request: ${summary.joinToString(" · ")}",
+                    Modifier.padding(horizontal = 16.dp, vertical = 6.dp), style = MaterialTheme.typography.bodySmall)
                 if (state.error != null) Text(state.error, color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.bodySmall)
                 if (state.busy) Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
