@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import com.axiel7.moelist.diagnostics.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import java.io.File
@@ -54,6 +55,7 @@ class AppUpdateViewModel(context: Context) : ViewModel() {
     fun check() {
         if (job?.isActive == true) return
         job = viewModelScope.launch {
+            AppDiagnostics.record(DiagnosticEvent.UPDATE_CHECK, DiagnosticOutcome.STARTED)
             mutableState.value = UpdateState(busy = true, message = "Checking for updates…")
             try {
                 val update = withContext(Dispatchers.IO) {
@@ -67,10 +69,12 @@ class AppUpdateViewModel(context: Context) : ViewModel() {
                         apk?.let { UpdatePolicy.bind(manifest, it, release) }
                     }.maxByOrNull { it.manifest.versionCode }
                 }
+                AppDiagnostics.record(DiagnosticEvent.UPDATE_CHECK)
                 mutableState.value = UpdateState(available = update,
                     message = if (update == null) "You’re up to date." else "Version ${update.manifest.versionName} is available.")
             } catch (error: Exception) {
                 currentCoroutineContext().ensureActive()
+                AppDiagnostics.record(DiagnosticEvent.UPDATE_CHECK, DiagnosticOutcome.FAILED, error = error)
                 mutableState.value = UpdateState(message = "Could not check for updates. ${error.message.orEmpty()}")
             }
         }
@@ -80,6 +84,7 @@ class AppUpdateViewModel(context: Context) : ViewModel() {
         if (job?.isActive == true) return
         val update = state.value.available ?: return
         job = viewModelScope.launch {
+            AppDiagnostics.record(DiagnosticEvent.UPDATE_DOWNLOAD, DiagnosticOutcome.STARTED)
             mutableState.value = state.value.copy(busy = true, progress = 0f, ready = null,
                 message = "Downloading update…")
             try {
@@ -126,10 +131,12 @@ class AppUpdateViewModel(context: Context) : ViewModel() {
                         partial.delete()
                     }
                 }
+                AppDiagnostics.record(DiagnosticEvent.UPDATE_DOWNLOAD)
                 mutableState.value = state.value.copy(busy = false, progress = null, ready = file,
                     message = "Update verified and ready to install. Your app data will be kept.")
             } catch (error: Exception) {
                 currentCoroutineContext().ensureActive()
+                AppDiagnostics.record(DiagnosticEvent.UPDATE_DOWNLOAD, DiagnosticOutcome.FAILED, error = error)
                 mutableState.value = state.value.copy(busy = false, progress = null,
                     message = "Could not download the update. ${error.message.orEmpty()}")
             }
