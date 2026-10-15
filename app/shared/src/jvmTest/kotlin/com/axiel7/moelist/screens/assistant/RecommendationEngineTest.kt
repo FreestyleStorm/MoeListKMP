@@ -73,11 +73,7 @@ class RecommendationEngineTest {
     }
 
     @Test fun followUpsUsePriorConstraintsAndShownTitlesWithRealCatalogResults() = runBlocking {
-        val requests = listOf(AnimeRequest(seedTitle = "Anime 1"),
-            AnimeRequest(seedTitle = "Anime 1", maxEpisodes = 23),
-            AnimeRequest(seedTitle = "Anime 1", maxEpisodes = 23, excludedIds = listOf(2)))
-        val responses = ArrayDeque(listOf(assistantJson.encodeToString(requests[0]), "[2,3,4]",
-            assistantJson.encodeToString(requests[1]), "[2,4]", assistantJson.encodeToString(requests[2]), "[4]"))
+        val responses = ArrayDeque(listOf("{\"seedTitle\":\"Anime 1\"}", "[2,3,4]", "[2,4]", "[4]"))
         val prompts = mutableListOf<String>()
         val nano = object : NanoClient {
             override suspend fun availability() = NanoAvailability.READY
@@ -100,7 +96,7 @@ class RecommendationEngineTest {
         assertEquals(listOf(4), third.matches.map { it.anime.id })
         assertEquals(2, third.imported)
         assertEquals(1, third.rated)
-        assertTrue(prompts[4].contains("\"maxEpisodes\":23"))
-        assertTrue(prompts[4].contains("Anime 2"))
+        assertTrue(prompts[2].contains("\"maxEpisodes\":23"))
+        assertTrue(prompts[2].contains("Anime 2"))
     }
 }
