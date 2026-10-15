@@ -1,0 +1,45 @@
+{
+  "events": [
+    "APP_START",
+    "APP_CRASH",
+    "NANO_CHECK",
+    "NANO_DOWNLOAD",
+    "NANO_GENERATE",
+    "ASSISTANT_REQUEST",
+    "ASSISTANT_INTERPRET",
+    "ASSISTANT_HISTORY",
+    "ASSISTANT_RANK",
+    "ASSISTANT_SELECTION",
+    "ASSISTANT_CANCEL",
+    "UPDATE_CHECK",
+    "UPDATE_DOWNLOAD",
+    "REPORT_UPLOAD"
+  ],
+  "outcomes": [
+    "STARTED",
+    "OK",
+    "FAILED",
+    "TIMED_OUT",
+    "CANCELLED",
+    "UNAVAILABLE",
+    "DOWNLOADABLE",
+    "DOWNLOADING"
+  ],
+  "metrics": [
+    "DURATION_MS",
+    "INPUT_TOKENS",
+    "OUTPUT_CHARACTERS",
+    "IMPORTED_COUNT",
+    "RATED_COUNT",
+    "HAS_SEED",
+    "MAX_EPISODES",
+    "GENRE_COUNT",
+    "AVOID_GENRE_COUNT",
+    "QUALITY_COUNT",
+    "CANDIDATE_COUNT",
+    "MATCH_COUNT",
+    "SHORTEST_MATCH",
+    "LONGEST_MATCH",
+    "HTTP_STATUS"
+  ]
+}
