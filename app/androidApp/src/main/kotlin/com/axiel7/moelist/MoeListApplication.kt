@@ -2,6 +2,7 @@ package com.axiel7.moelist
 
 import android.app.Application
 import android.os.Build
+import com.axiel7.moelist.diagnostics.AndroidDiagnostics
 import com.axiel7.moelist.worker.NotificationWorker
 import com.axiel7.moelist.worker.NotificationWorkerManager
 import com.axiel7.moelist.worker.createAiringAnimeNotificationChannel
@@ -15,6 +16,7 @@ class MoeListApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        runCatching { AndroidDiagnostics.initialize(this) }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createAiringAnimeNotificationChannel(this)
         }
