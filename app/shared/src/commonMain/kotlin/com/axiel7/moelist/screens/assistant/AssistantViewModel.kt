@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.axiel7.moelist.data.model.anime.AnimeNode
 import com.axiel7.moelist.data.repository.AnimeRepository
 import com.axiel7.moelist.data.repository.DefaultPreferencesRepository
+import com.axiel7.moelist.diagnostics.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
@@ -42,7 +43,13 @@ class AssistantViewModel(repository: AnimeRepository, preferences: DefaultPrefer
         work = viewModelScope.launch {
             mutable.update { it.copy(busy = true, error = null, status = "Checking Gemini Nano…") }
             try {
-                val availability = nano.availability()
+                val availability = diagnosticOperation(DiagnosticEvent.NANO_CHECK) { nano.availability() }
+                AppDiagnostics.record(DiagnosticEvent.NANO_CHECK, when (availability) {
+                    NanoAvailability.READY -> DiagnosticOutcome.OK
+                    NanoAvailability.DOWNLOADABLE -> DiagnosticOutcome.DOWNLOADABLE
+                    NanoAvailability.DOWNLOADING -> DiagnosticOutcome.DOWNLOADING
+                    else -> DiagnosticOutcome.UNAVAILABLE
+                })
                 mutable.update { it.copy(nano = availability, status = when (availability) {
                     NanoAvailability.READY -> "Gemini Nano is ready. Conversations run on this phone."
                     NanoAvailability.DOWNLOADABLE -> "Download Gemini Nano to start. Wi-Fi is recommended."
@@ -58,7 +65,7 @@ class AssistantViewModel(repository: AnimeRepository, preferences: DefaultPrefer
         }
     }
 
-    fun download() = runWork {
+    fun download() = runWork(DiagnosticEvent.NANO_DOWNLOAD) {
         nano.download { progress -> mutable.update { it.copy(status = progress) } }
         val availability = nano.availability()
         mutable.update { it.copy(nano = availability, status = "Model setup finished. Check its status before sending.") }
@@ -66,7 +73,7 @@ class AssistantViewModel(repository: AnimeRepository, preferences: DefaultPrefer
 
     fun send(text: String) {
         if (text.isBlank() || text.length > 600 || mutable.value.nano != NanoAvailability.READY) return
-        runWork {
+        runWork(DiagnosticEvent.ASSISTANT_REQUEST) {
             val before = mutable.value
             mutable.update { it.copy(messages = (it.messages + AssistantMessage(true, text.trim())).takeLast(20)) }
             val result = withTimeout(180000) {
@@ -76,7 +83,7 @@ class AssistantViewModel(repository: AnimeRepository, preferences: DefaultPrefer
         }
     }
 
-    fun choose(node: AnimeNode) = runWork {
+    fun choose(node: AnimeNode) = runWork(DiagnosticEvent.ASSISTANT_REQUEST) {
         val result = withTimeout(180000) {
             conversation.recommend(mutable.value.request.copy(seedTitle = node.title), node.id) { progress -> mutable.update { it.copy(status = progress) } }
         }
@@ -97,11 +104,11 @@ class AssistantViewModel(repository: AnimeRepository, preferences: DefaultPrefer
 
     fun cancel() { work?.cancel(); mutable.update { it.copy(busy = false, status = "Stopped. Your previous results are still available.") } }
 
-    private fun runWork(block: suspend () -> Unit) {
+    private fun runWork(event: DiagnosticEvent, block: suspend () -> Unit) {
         if (mutable.value.busy) return
         work = viewModelScope.launch {
             mutable.update { it.copy(busy = true, error = null) }
-            try { block() }
+            try { diagnosticOperation(event, block) }
             catch (e: CancellationException) {
                 if (e !is TimeoutCancellationException) throw e
                 mutable.update { it.copy(error = "That took too long. Please retry; previous results are unchanged.") }
