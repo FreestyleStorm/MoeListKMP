@@ -1,0 +1,7 @@
+{$LOG_DOMAIN} {
+    request_body {
+        max_size 256KB
+    }
+    header Cache-Control "no-store"
+    reverse_proxy inbox:8765
+}
