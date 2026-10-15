@@ -42,6 +42,23 @@ class AssistantViewTest {
         compose.runOnIdle { assertEquals(1, checked) }
     }
 
+    @Test fun clarificationKeepsTheComparisonVisibleAndDoesNotPresentOldMatchesAsNew() {
+        var sent: String? = null
+        val state = mutableStateOf(AssistantUiState(nano = NanoAvailability.READY,
+            request = AnimeRequest(seedTitle = "Sample favorite", seedId = 1, minEpisodes = 27),
+            clarifications = listOf("Prefer fewer child protagonists. Keep the other preferences.", "Less childish tone. Keep the other preferences."),
+            messages = listOf(AssistantMessage(false, "Do you mean fewer child main characters, or a less childish tone?")),
+            matches = listOf(AnimeMatch(AnimeDetails(id = 2, title = "Previous match", numEpisodes = 52), "Old result", 1.0))))
+        compose.setContent { MoeListTheme { AssistantViewContent(state.value, true,
+            NavActionManager.rememberNavActionManager(), { sent = it }, {}, {}, {}, {}, {}) } }
+        compose.onNodeWithText("Previous match").assertDoesNotExist()
+        compose.onNodeWithText("Current request: Similar to Sample favorite · 27+ episodes").assertIsDisplayed()
+        compose.onNodeWithText("Fewer child protagonists").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals("Prefer fewer child protagonists. Keep the other preferences.", sent) }
+        compose.runOnIdle { state.value = state.value.copy(clarifications = emptyList()) }
+        compose.onNodeWithText("Previous match").performScrollTo().assertIsDisplayed()
+    }
+
     @Test fun chatCanOpenRealDetailsAndClearItsHistoryInBothThemes() {
         val dark = mutableStateOf(true)
         val initial = AssistantUiState(nano = NanoAvailability.READY, status = "Ready for your next request.",
